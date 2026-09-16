@@ -77,10 +77,16 @@ main {
 
 .line-item {
   display: grid;
-  grid-template-columns: 1fr 90px 36px;
+  grid-template-columns: 1fr 58px 36px;
   gap: 0.5rem;
   align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.line-item input[type="number"] {
+  padding-left: 0.35rem;
+  padding-right: 0.15rem;
+  text-align: center;
 }
 
 select, input[type="number"], input[type="text"] {

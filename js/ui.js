@@ -18,7 +18,7 @@ function productSelect(products, category, item, onChange) {
       })
     ),
   ];
-  return el('select', { onchange: (e) => onChange({ ...item, name: e.target.value }) }, options);
+  return el('select', { onchange: (e) => onChange(e.target.value) }, options);
 }
 
 function qtyInput(item, onChange) {
@@ -28,52 +28,16 @@ function qtyInput(item, onChange) {
     inputmode: 'numeric',
     placeholder: '0',
     value: item.qty === '' || item.qty === undefined || item.qty === null ? '' : String(item.qty),
-    onchange: (e) => {
+    // input イベントで入力の都度反映する（blur を待たない）
+    oninput: (e) => {
       if (e.target.value === '') {
-        onChange({ ...item, qty: '' });
+        onChange('');
         return;
       }
       const v = Number(e.target.value);
-      onChange({ ...item, qty: Number.isNaN(v) ? '' : v });
+      onChange(Number.isNaN(v) ? '' : v);
     },
   });
-}
-
-function lineItemsCard({ title, items, products, category, onItemsChange }) {
-  const rows = items.map((item, idx) =>
-    el('div', { class: 'line-item' }, [
-      productSelect(products, category, item, (next) => {
-        const copy = items.slice();
-        copy[idx] = next;
-        onItemsChange(copy);
-      }),
-      qtyInput(item, (next) => {
-        const copy = items.slice();
-        copy[idx] = next;
-        onItemsChange(copy);
-      }),
-      el('button', {
-        class: 'remove-btn',
-        text: '×',
-        'aria-label': '削除',
-        onclick: () => {
-          const copy = items.slice();
-          copy.splice(idx, 1);
-          onItemsChange(copy.length ? copy : [{ name: '', qty: '' }]);
-        },
-      }),
-    ])
-  );
-
-  return el('div', { class: 'card' }, [
-    el('h2', { text: title }),
-    ...rows,
-    el('button', {
-      class: 'add-btn',
-      text: '＋ 商品を追加',
-      onclick: () => onItemsChange(items.concat([{ name: '', qty: '' }])),
-    }),
-  ]);
 }
 
 function resultRow(label, value, unit) {
@@ -92,85 +56,145 @@ function riceResultRow(label, value, unit) {
   ]);
 }
 
-export function renderMochiTab(ctx) {
-  const { products, data, update } = ctx;
-  const whiteItems = data.mochiWhiteItems;
-  const awaItems = data.mochiAwaItems;
-
-  const whiteWeighted = whiteItems
+function buildResultsContent(products, data) {
+  const whiteWeighted = data.mochiWhiteItems
     .filter((i) => i.name)
     .map((i) => ({ weight: weightOf(products, 'mochi', i.name), qty: i.qty }));
-  const awaWeighted = awaItems
+  const awaWeighted = data.mochiAwaItems
     .filter((i) => i.name)
     .map((i) => ({ weight: weightOf(products, 'awamochi', i.name), qty: i.qty }));
 
   const ratio = { awaRatio: Number(data.awaRatio) || 0, mochiRatio: Number(data.mochiRatio) || 0 };
   const r = calcMochi(whiteWeighted, awaWeighted, ratio);
 
-  const wrap = el('div');
+  return [
+    el('h2', { text: '算出結果' }),
+    el('h3', { text: '白もち系' }),
+    el('div', { class: 'result-box' }, [
+      resultRow('出来上がり必要量', r.whiteTotalKg, 'kg'),
+      riceResultRow('必要もち米量', r.whiteRiceKg, 'kg'),
+      resultRow('せいろ数', r.whiteSeiroCount, '枚'),
+    ]),
+    el('h3', { text: '粟もち系' }),
+    el('div', { class: 'result-box' }, [
+      resultRow('出来上がり必要量', r.awaTotalKg, 'kg'),
+      riceResultRow('必要もち米量', r.awaMochiPortionKg, 'kg'),
+      resultRow('必要あわ量', r.awaPortionKg, 'kg'),
+      resultRow('せいろ数', r.awaSeiroCount, '枚'),
+    ]),
+    el('div', { class: 'result-box result-highlight' }, [resultRow('合計せいろ数', r.seiroCount, '枚')]),
+    el('p', { class: 'note', text: '※ 1せいろあたり最大3.8kg程度の米が目安です。' }),
+  ];
+}
 
-  wrap.appendChild(
-    lineItemsCard({
-      title: '白もち・なまこ・お供え等',
-      items: whiteItems,
-      products,
-      category: 'mochi',
-      onItemsChange: (next) => update(() => (data.mochiWhiteItems = next)),
-    })
-  );
+/**
+ * もちタブを root にマウントする。
+ * 数量入力のたびに結果カードだけを再描画し、商品選択欄・数量欄自体は
+ * 再生成しない（入力中にフォーカスが外れて再入力が必要になるのを防ぐため）。
+ */
+export function mountMochiTab(root, ctx) {
+  const { products, data, persist } = ctx;
 
-  wrap.appendChild(
-    lineItemsCard({
-      title: '粟もち',
-      items: awaItems,
-      products,
-      category: 'awamochi',
-      onItemsChange: (next) => update(() => (data.mochiAwaItems = next)),
-    })
-  );
+  const resultsSection = el('div', { class: 'card' });
 
-  wrap.appendChild(
-    el('div', { class: 'card' }, [
-      el('h2', { text: 'あわ / もち比率（粟もち用）' }),
-      el('div', { class: 'ratio-row' }, [
-        el('label', {}, ['あわ', el('input', {
-          type: 'number', step: '0.1', min: '0', value: String(data.awaRatio),
-          onchange: (e) => update(() => (data.awaRatio = Number(e.target.value) || 0)),
-        })]),
-        el('span', { text: ':' }),
-        el('label', {}, ['もち', el('input', {
-          type: 'number', step: '0.1', min: '0', value: String(data.mochiRatio),
-          onchange: (e) => update(() => (data.mochiRatio = Number(e.target.value) || 0)),
-        })]),
+  function refreshResults() {
+    resultsSection.innerHTML = '';
+    for (const node of buildResultsContent(products, data)) {
+      resultsSection.appendChild(node);
+    }
+  }
+
+  function renderItemsSection(container, title, itemsKey, category) {
+    container.innerHTML = '';
+    container.appendChild(el('h2', { text: title }));
+    const items = data[itemsKey];
+
+    items.forEach((item, idx) => {
+      container.appendChild(
+        el('div', { class: 'line-item' }, [
+          productSelect(products, category, item, (name) => {
+            items[idx] = { ...items[idx], name };
+            persist();
+            refreshResults();
+          }),
+          qtyInput(item, (qty) => {
+            items[idx] = { ...items[idx], qty };
+            persist();
+            refreshResults();
+          }),
+          el('button', {
+            class: 'remove-btn',
+            text: '×',
+            'aria-label': '削除',
+            onclick: () => {
+              items.splice(idx, 1);
+              if (!items.length) items.push({ name: '', qty: '' });
+              persist();
+              renderItemsSection(container, title, itemsKey, category);
+              refreshResults();
+            },
+          }),
+        ])
+      );
+    });
+
+    container.appendChild(
+      el('button', {
+        class: 'add-btn',
+        text: '＋ 商品を追加',
+        onclick: () => {
+          items.push({ name: '', qty: '' });
+          persist();
+          renderItemsSection(container, title, itemsKey, category);
+        },
+      })
+    );
+  }
+
+  const whiteSection = el('div', { class: 'card' });
+  const awaSection = el('div', { class: 'card' });
+  renderItemsSection(whiteSection, '白もち・なまこ・お供え等', 'mochiWhiteItems', 'mochi');
+  renderItemsSection(awaSection, '粟もち', 'mochiAwaItems', 'awamochi');
+
+  const ratioSection = el('div', { class: 'card' }, [
+    el('h2', { text: 'あわ / もち比率（粟もち用）' }),
+    el('div', { class: 'ratio-row' }, [
+      el('label', {}, [
+        'あわ',
+        el('input', {
+          type: 'number',
+          step: '0.1',
+          min: '0',
+          value: String(data.awaRatio),
+          oninput: (e) => {
+            data.awaRatio = Number(e.target.value) || 0;
+            persist();
+            refreshResults();
+          },
+        }),
       ]),
-    ])
-  );
+      el('span', { text: ':' }),
+      el('label', {}, [
+        'もち',
+        el('input', {
+          type: 'number',
+          step: '0.1',
+          min: '0',
+          value: String(data.mochiRatio),
+          oninput: (e) => {
+            data.mochiRatio = Number(e.target.value) || 0;
+            persist();
+            refreshResults();
+          },
+        }),
+      ]),
+    ]),
+  ]);
 
-  wrap.appendChild(
-    el('div', { class: 'card' }, [
-      el('h2', { text: '算出結果' }),
-      el('h3', { text: '白もち系' }),
-      el('div', { class: 'result-box' }, [
-        resultRow('出来上がり必要量', r.whiteTotalKg, 'kg'),
-        riceResultRow('必要もち米量', r.whiteRiceKg, 'kg'),
-        resultRow('せいろ数', r.whiteSeiroCount, '枚'),
-      ]),
-      el('h3', { text: '粟もち系' }),
-      el('div', { class: 'result-box' }, [
-        resultRow('出来上がり必要量', r.awaTotalKg, 'kg'),
-        riceResultRow('必要もち米量', r.awaMochiPortionKg, 'kg'),
-        resultRow('必要あわ量', r.awaPortionKg, 'kg'),
-        resultRow('せいろ数', r.awaSeiroCount, '枚'),
-      ]),
-      el('div', { class: 'result-box result-highlight' }, [
-        resultRow('合計せいろ数', r.seiroCount, '枚'),
-      ]),
-      el('p', {
-        class: 'note',
-        text: '※ 1せいろあたり最大3.8kg程度の米が目安です。',
-      }),
-    ])
-  );
+  refreshResults();
 
-  return wrap;
+  root.appendChild(whiteSection);
+  root.appendChild(awaSection);
+  root.appendChild(ratioSection);
+  root.appendChild(resultsSection);
 }

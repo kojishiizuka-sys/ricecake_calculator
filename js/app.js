@@ -1,6 +1,6 @@
 import { loadState, saveState } from './store.js';
 import { PRODUCTS } from './data.js';
-import { renderMochiTab } from './ui.js';
+import { mountMochiTab } from './ui.js';
 import { registerInstallPrompt } from './install.js';
 
 const state = {
@@ -10,21 +10,12 @@ const state = {
 
 const root = document.getElementById('app');
 
-function render() {
-  root.innerHTML = '';
-  const ctx = {
-    products: state.products,
-    data: state.data,
-    update(mutator) {
-      mutator();
-      saveState(state.data);
-      render();
-    },
-  };
-  root.appendChild(renderMochiTab(ctx));
-}
+mountMochiTab(root, {
+  products: state.products,
+  data: state.data,
+  persist: () => saveState(state.data),
+});
 
-render();
 registerInstallPrompt();
 
 if ('serviceWorker' in navigator) {
