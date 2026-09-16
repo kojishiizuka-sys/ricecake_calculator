@@ -1,12 +1,12 @@
 :root {
-  --brand: #c0392b;
-  --brand-dark: #96281b;
-  --bg: #f7f1e3;
+  --brand: #2563c4;
+  --brand-dark: #1a4a96;
+  --bg: #eef3fa;
   --card-bg: #ffffff;
-  --text: #2c2420;
-  --muted: #7a6f63;
-  --border: #e3d9c6;
-  --accent-bg: #fdf6e9;
+  --text: #1f2933;
+  --muted: #6b7686;
+  --border: #d7e1ee;
+  --accent-bg: #eaf1fc;
   font-size: 16px;
 }
 
@@ -48,34 +48,6 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-}
-
-.tabs {
-  display: flex;
-  overflow-x: auto;
-  background: var(--card-bg);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 52px;
-  z-index: 9;
-}
-
-.tab-btn {
-  flex: 1 0 auto;
-  padding: 0.8rem 1rem;
-  border: none;
-  background: transparent;
-  font-size: 0.95rem;
-  color: var(--muted);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  white-space: nowrap;
-}
-
-.tab-btn.is-active {
-  color: var(--brand-dark);
-  font-weight: 700;
-  border-bottom-color: var(--brand);
 }
 
 main {
@@ -123,7 +95,7 @@ select, input[type="number"], input[type="text"] {
 
 .remove-btn {
   border: none;
-  background: #f1e3e1;
+  background: #e1e9f7;
   color: var(--brand-dark);
   border-radius: 8px;
   height: 38px;
@@ -185,33 +157,6 @@ select, input[type="number"], input[type="text"] {
   margin: 0.5rem 0 0;
   line-height: 1.5;
 }
-
-.products-group h3 { margin-top: 1.2rem; }
-
-.product-row {
-  display: grid;
-  grid-template-columns: 1fr 90px 36px;
-  gap: 0.5rem;
-  align-items: center;
-  margin-bottom: 0.4rem;
-}
-
-.product-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-}
-
-.btn {
-  border: none;
-  border-radius: 8px;
-  padding: 0.55rem 1rem;
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-
-.btn-primary { background: var(--brand); color: #fff; }
-.btn-secondary { background: #ede4d3; color: var(--text); }
 
 .app-footer {
   text-align: center;

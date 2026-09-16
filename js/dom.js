@@ -22,8 +22,8 @@ export function el(tag, attrs = {}, children = []) {
   return node;
 }
 
-export function fmt(n, unit = '') {
+export function fmt(n, unit = '', maxDecimals = 3) {
   if (n === '' || n === null || n === undefined || Number.isNaN(n)) return '—';
-  const text = Number(n).toLocaleString('ja-JP', { maximumFractionDigits: 3 });
+  const text = Number(n).toLocaleString('ja-JP', { maximumFractionDigits: maxDecimals });
   return unit ? `${text}${unit}` : text;
 }

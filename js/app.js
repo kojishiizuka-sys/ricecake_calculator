@@ -1,19 +1,14 @@
-import { loadProducts, saveProducts, resetProducts as resetProductsStore, loadState, saveState } from './store.js';
-import { renderSekihanTab, renderMochiTab, renderIngredientsTab, renderProductsTab } from './ui.js';
+import { loadState, saveState } from './store.js';
+import { PRODUCTS } from './data.js';
+import { renderMochiTab } from './ui.js';
 import { registerInstallPrompt } from './install.js';
 
 const state = {
-  products: loadProducts(),
+  products: PRODUCTS,
   data: loadState(),
 };
 
 const root = document.getElementById('app');
-let currentTab = 'sekihan';
-
-function persist() {
-  saveProducts(state.products);
-  saveState(state.data);
-}
 
 function render() {
   root.innerHTML = '';
@@ -22,46 +17,12 @@ function render() {
     data: state.data,
     update(mutator) {
       mutator();
-      persist();
-      render();
-    },
-    resetProducts() {
-      state.products = resetProductsStore();
+      saveState(state.data);
       render();
     },
   };
-
-  let node;
-  switch (currentTab) {
-    case 'mochi':
-      node = renderMochiTab(ctx);
-      break;
-    case 'ingredients':
-      node = renderIngredientsTab(ctx);
-      break;
-    case 'products':
-      node = renderProductsTab(ctx);
-      break;
-    case 'sekihan':
-    default:
-      node = renderSekihanTab(ctx);
-      break;
-  }
-  root.appendChild(node);
+  root.appendChild(renderMochiTab(ctx));
 }
-
-document.querySelectorAll('.tab-btn').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach((b) => {
-      b.classList.remove('is-active');
-      b.setAttribute('aria-selected', 'false');
-    });
-    btn.classList.add('is-active');
-    btn.setAttribute('aria-selected', 'true');
-    currentTab = btn.dataset.tab;
-    render();
-  });
-});
 
 render();
 registerInstallPrompt();

@@ -1,5 +1,5 @@
-// エクセル「赤飯」「もち」「原材料算出」シートの計算式を移植したモジュール。
-// すべて純粋関数として実装し、UI から独立してテストできるようにする。
+// エクセル「もち」シートの計算式を移植したモジュール。
+// 純粋関数として実装し、UI から独立してテストできるようにする。
 
 import { excelRound, excelRoundUp } from './round.js';
 
@@ -11,21 +11,6 @@ function sumAmountKg(items) {
     return acc + w * q;
   }, 0);
   return totalG / 1000;
-}
-
-/**
- * 赤飯シートの計算（B11, B13, C13, E13, H12, H13 に相当）
- * @param {{weight:number, qty:number}[]} items
- */
-export function calcSekihan(items) {
-  const totalKg = sumAmountKg(items); // B11 出来上がり必要量
-  const riceKg = excelRoundUp((totalKg * 1000) / 1.9, 0) / 1000; // B13 必要なもち米の量
-  const sasageG = excelRoundUp(((totalKg * 1000) / 1.9) * 0.07, 0); // C13 ささげの量
-  const seiroCount = riceKg > 0 ? excelRoundUp(riceKg / 3.9, 0) : 0; // E13 せいろ数
-  const perSeiroRiceKg = seiroCount > 0 ? excelRound(riceKg / seiroCount, 2) : 0; // H12
-  const perSeiroSasageG = seiroCount > 0 ? excelRound(sasageG / seiroCount, 0) : 0; // H13
-
-  return { totalKg, riceKg, sasageG, seiroCount, perSeiroRiceKg, perSeiroSasageG };
 }
 
 /**
@@ -69,22 +54,5 @@ export function calcMochi(whiteItems, awaItems, ratio = { awaRatio: 0.8, mochiRa
     perSeiroWhiteRiceKg,
     perSeiroAwaMochiKg,
     perSeiroAwaG,
-  };
-}
-
-/**
- * 原材料算出シートの計算（B5, B6, B7, B8 に相当）
- * @param {number} riceKg もち米の量(kg)
- */
-export function calcSekihanIngredients(riceKg) {
-  if (riceKg === '' || riceKg === null || riceKg === undefined || Number.isNaN(Number(riceKg))) {
-    return { redWaterG: '', waterG: '', saltG: '', sasageG: '' };
-  }
-  const kg = Number(riceKg);
-  return {
-    redWaterG: excelRound(kg * 300, -1),
-    waterG: excelRound(kg * 900, -1),
-    saltG: excelRound(kg * 12.5, 0),
-    sasageG: excelRound(kg * 70, 0),
   };
 }

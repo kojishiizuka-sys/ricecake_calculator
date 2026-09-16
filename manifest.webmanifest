@@ -1,12 +1,12 @@
 {
-  "name": "赤飯・もち算出計算機",
-  "short_name": "赤飯もち算出",
-  "description": "赤飯・もちの必要材料とせいろ数を算出するアプリ",
+  "name": "もち必要原材料算出",
+  "short_name": "もち原材料算出",
+  "description": "もちの必要原材料とせいろ数を算出するアプリ",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7f1e3",
-  "theme_color": "#c0392b",
+  "background_color": "#eef3fa",
+  "theme_color": "#2563c4",
   "orientation": "portrait-primary",
   "lang": "ja",
   "icons": [

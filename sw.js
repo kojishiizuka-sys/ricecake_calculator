@@ -1,5 +1,5 @@
 // アプリシェルをキャッシュしてオフラインでも動作させるサービスワーカー。
-const CACHE_VERSION = 'ricecake-v1';
+const CACHE_VERSION = 'ricecake-v2';
 const SCOPE_URL = new URL(self.registration.scope);
 
 const APP_SHELL = [
